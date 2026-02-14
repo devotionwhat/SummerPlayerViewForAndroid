@@ -1,0 +1,37 @@
+name: Build Legacy Project
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        # Old projects MUST use Java 8. Java 17 or 21 will fail.
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Accept Android Licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install Old Build Tools
+        # This project needs old tools that aren't pre-installed anymore
+        run: sdkmanager "build-tools;26.0.2" "platforms;android-26"
+
+      - name: Grant Execute Permission
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        # We use --stacktrace so we can see why it fails (and it likely will)
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Legacy-App
+          path: "**/*.apk"
